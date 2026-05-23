@@ -29,10 +29,10 @@ index 4f8fef88e..ca9fb1d4d 100644
  #include <ghostty/vt/key.h>
 diff --git a/include/ghostty/vt/terminal.h b/include/ghostty/vt/terminal.h
 new file mode 100644
-index 000000000..c0a9c6604
+index 000000000..e1cd14e70
 --- /dev/null
 +++ b/include/ghostty/vt/terminal.h
-@@ -0,0 +1,292 @@
+@@ -0,0 +1,296 @@
 +/**
 + * @file terminal.h
 + *
@@ -330,10 +330,10 @@ index 000000000..c0a9c6604
 +
 +#endif /* GHOSTTY_VT_TERMINAL_H */
 diff --git a/src/lib_vt.zig b/src/lib_vt.zig
-index 03a883e20..9d74a46dc 100644
+index 03a883e20..154a9daae 100644
 --- a/src/lib_vt.zig
 +++ b/src/lib_vt.zig
-@@ -140,6 +140,46 @@ comptime {
+@@ -140,6 +140,48 @@ comptime {
          @export(&c.sgr_unknown_partial, .{ .name = "ghostty_sgr_unknown_partial" });
          @export(&c.sgr_attribute_tag, .{ .name = "ghostty_sgr_attribute_tag" });
          @export(&c.sgr_attribute_value, .{ .name = "ghostty_sgr_attribute_value" });
@@ -383,7 +383,7 @@ index 03a883e20..9d74a46dc 100644
          // On Wasm we need to export our allocator convenience functions.
          if (builtin.target.cpu.arch.isWasm()) {
 diff --git a/src/terminal/PageList.zig b/src/terminal/PageList.zig
-index 29f414e03..6b5ab19ab 100644
+index 29f414e03..6b5ab19f5 100644
 --- a/src/terminal/PageList.zig
 +++ b/src/terminal/PageList.zig
 @@ -5,6 +5,7 @@ const PageList = @This();
@@ -425,7 +425,7 @@ index 29f414e03..6b5ab19ab 100644
      page.* = .{
          .data = .initBuf(.init(page_buf), layout),
 diff --git a/src/terminal/c/main.zig b/src/terminal/c/main.zig
-index bc92597f5..5814a0559 100644
+index bc92597f5..ea656a013 100644
 --- a/src/terminal/c/main.zig
 +++ b/src/terminal/c/main.zig
 @@ -4,6 +4,7 @@ pub const key_event = @import("key_event.zig");
@@ -436,7 +436,7 @@ index bc92597f5..5814a0559 100644
  
  // The full C API, unexported.
  pub const osc_new = osc.new;
-@@ -52,6 +53,47 @@ pub const key_encoder_encode = key_encode.encode;
+@@ -52,6 +53,49 @@ pub const key_encoder_encode = key_encode.encode;
  
  pub const paste_is_safe = paste.is_safe;
  
@@ -486,7 +486,7 @@ index bc92597f5..5814a0559 100644
  test {
      _ = color;
      _ = osc;
-@@ -59,6 +101,7 @@ test {
+@@ -59,6 +103,7 @@ test {
      _ = key_encode;
      _ = paste;
      _ = sgr;
@@ -496,10 +496,10 @@ index bc92597f5..5814a0559 100644
      _ = @import("../../lib/allocator.zig");
 diff --git a/src/terminal/c/terminal.zig b/src/terminal/c/terminal.zig
 new file mode 100644
-index 000000000..1ce4f1919
+index 000000000..186b37dde
 --- /dev/null
 +++ b/src/terminal/c/terminal.zig
-@@ -0,0 +1,1168 @@
+@@ -0,0 +1,1184 @@
 +//! C API wrapper for Terminal
 +//!
 +//! This provides a minimal, high-performance interface to Ghostty's Terminal
