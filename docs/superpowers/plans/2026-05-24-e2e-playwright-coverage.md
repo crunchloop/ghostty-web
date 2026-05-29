@@ -18,18 +18,18 @@ All tasks below have been implemented. Test counts and pass status reflect the c
 
 ## Coverage Map
 
-| Spec file | Tests | Status |
-|-----------|-------|--------|
-| `01-rendering.spec.ts` | 13 | ✅ all pass |
-| `02-keyboard.spec.ts` | 5 | ✅ all pass |
-| `03-scroll.spec.ts` | 8 | ✅ all pass |
-| `04-selection.spec.ts` | 7 (2 skip) | ✅ 5 pass, 2 skip* |
-| `05-resize.spec.ts` | 6 | ✅ all pass |
-| `06-events.spec.ts` | 14 | ✅ all pass |
-| `07-theme-options.spec.ts` | 9 | ✅ all pass |
-| `08-addons.spec.ts` | 5 | ✅ all pass |
-| `09-lifecycle.spec.ts` | 14 | ✅ all pass |
-| **Total** | **81** | **✅ 81 pass, 2 skip** |
+| Spec file                  | Tests      | Status                 |
+| -------------------------- | ---------- | ---------------------- |
+| `01-rendering.spec.ts`     | 13         | ✅ all pass            |
+| `02-keyboard.spec.ts`      | 5          | ✅ all pass            |
+| `03-scroll.spec.ts`        | 8          | ✅ all pass            |
+| `04-selection.spec.ts`     | 7 (2 skip) | ✅ 5 pass, 2 skip\*    |
+| `05-resize.spec.ts`        | 6          | ✅ all pass            |
+| `06-events.spec.ts`        | 14         | ✅ all pass            |
+| `07-theme-options.spec.ts` | 9          | ✅ all pass            |
+| `08-addons.spec.ts`        | 5          | ✅ all pass            |
+| `09-lifecycle.spec.ts`     | 14         | ✅ all pass            |
+| **Total**                  | **81**     | **✅ 81 pass, 2 skip** |
 
 \* `double-click selects a word` and `triple-click selects a line` are skipped: `getWordAtCell`
 calls `getLine()` which returns `invalid_value (-2)` from `ghostty_render_state_update` under
@@ -41,13 +41,16 @@ Fix requires an explicit render-state warmup hook exposed to JS callers.
 ## Infrastructure Files
 
 ### `playwright.config.ts`
+
 - Chromium only, serial (no parallelism), 1 retry, 15s timeout
 - `webServer`: `bun run dev` on `http://localhost:8000`, reuse existing
 - Trace on first retry, screenshot on failure, video on first retry
 - HTML + list reporters
 
 ### `tests/e2e/helpers/terminal.ts`
+
 Helper functions available to all specs:
+
 - `waitForTerminal(page)` — waits for `window.__ghosttyReady`
 - `termWrite(page, data)` — calls `__ghosttyTerm.write()`
 - `termReset(page)` — clears terminal to known state
@@ -60,10 +63,11 @@ Helper functions available to all specs:
 - `hasRenderedContent(page)` — true if canvas has non-black pixels
 
 ### `demo/index.html` globals
+
 ```javascript
-window.__ghosttyTerm    // Terminal instance
-window.__ghosttyFitAddon // FitAddon instance
-window.__ghosttyReady   // true after open()
+window.__ghosttyTerm; // Terminal instance
+window.__ghosttyFitAddon; // FitAddon instance
+window.__ghosttyReady; // true after open()
 ```
 
 ---
@@ -73,6 +77,7 @@ window.__ghosttyReady   // true after open()
 **Covers:** Canvas mount, pixel content, buffer reads, ANSI SGR, cursor, wide chars, emoji, alternate screen.
 
 Tests:
+
 - [ ] canvas is rendered on screen
 - [ ] canvas contains rendered pixels after write
 - [ ] plain text appears in buffer
@@ -94,6 +99,7 @@ Tests:
 **Covers:** `input()`, `onData`, `disableStdin`, `attachCustomKeyEventHandler`, `onKey`.
 
 Tests:
+
 - [ ] onData fires when input() is called with wasUserInput=true
 - [ ] onData does NOT fire when wasUserInput=false
 - [ ] disableStdin blocks input
@@ -107,6 +113,7 @@ Tests:
 **Covers:** `scrollToTop`, `scrollToBottom`, `scrollLines`, `scrollPages`, `onScroll`, mouse wheel, `preserveScrollOnWrite`.
 
 Tests:
+
 - [ ] scrollToTop moves viewport to start of scrollback
 - [ ] scrollToBottom returns to current output
 - [ ] scrollLines(N) moves viewport up by N
@@ -123,6 +130,7 @@ Tests:
 **Covers:** `select`, `selectAll`, `clearSelection`, `hasSelection`, `getSelectionPosition`, `onSelectionChange`, mouse drag.
 
 Tests:
+
 - [ ] hasSelection() is false initially
 - [ ] select() creates a selection
 - [ ] selectAll() selects all visible content
@@ -140,6 +148,7 @@ Tests:
 **Covers:** `resize()`, `onResize`, `rows`, `cols`, `FitAddon.fit()`, container fill.
 
 Tests:
+
 - [ ] terminal has valid initial dimensions
 - [ ] resize() updates cols and rows
 - [ ] onResize fires with new dimensions
@@ -154,6 +163,7 @@ Tests:
 **Covers:** `onBell`, `onTitleChange`, `onLineFeed`, `onWriteParsed`, `onCursorMove`, `onRender`, OSC 133 (shell integration), OSC 22 (cursor shape), focus events (mode 1004).
 
 Tests:
+
 - [ ] onBell fires on BEL character
 - [ ] onTitleChange fires on OSC 0
 - [ ] onTitleChange fires on OSC 2
@@ -176,6 +186,7 @@ Tests:
 **Covers:** `options.theme`, `options.fontSize`, `options.cursorBlink`, `options.scrollback`, `options.convertEol`, `options.emitTerminalResponses`, `clear()`, `reset()`.
 
 Tests:
+
 - [ ] theme background is applied to canvas container
 - [ ] options.fontSize can be read
 - [ ] options.cursorBlink can be set dynamically
@@ -193,6 +204,7 @@ Tests:
 **Covers:** `loadAddon`, `FitAddon.fit()`, `FitAddon.proposeDimensions()`, addon lifecycle.
 
 Tests:
+
 - [ ] FitAddon is loaded and fit() is callable
 - [ ] FitAddon proposeDimensions() returns valid size
 - [ ] loadAddon activates a custom addon
@@ -206,6 +218,7 @@ Tests:
 **Covers:** `write`, `writeln`, write callbacks, `dispose`, `buffer.active/normal/alternate`, `getCell`, `markers`, `unicode`, mode queries.
 
 Tests:
+
 - [ ] write() throws after dispose()
 - [ ] writeln() appends CRLF
 - [ ] write() with callback invokes callback
@@ -227,15 +240,15 @@ Tests:
 
 The following features exist in the library but are not yet covered by E2E tests:
 
-| Feature | API | Reason not covered |
-|---------|-----|--------------------|
-| IME input | textarea position | Requires OS-level IME simulation |
-| Clipboard paste | Ctrl+V / right-click paste | Requires clipboard permissions in headless |
-| Mouse tracking responses | mode 1000/1002/1003 | Requires PTY round-trip |
-| Kitty keyboard protocol | CSI responses | Requires PTY round-trip |
-| Synchronized output (mode 2026) | defer render | Timing-sensitive, needs dedicated test harness |
-| Scrollback line access | `getScrollbackLine()` | Accessible via `SelectionManager` internals |
-| `getSelection()` text | Returns rendered text | WASM render state unavailable outside render frame |
+| Feature                         | API                        | Reason not covered                                 |
+| ------------------------------- | -------------------------- | -------------------------------------------------- |
+| IME input                       | textarea position          | Requires OS-level IME simulation                   |
+| Clipboard paste                 | Ctrl+V / right-click paste | Requires clipboard permissions in headless         |
+| Mouse tracking responses        | mode 1000/1002/1003        | Requires PTY round-trip                            |
+| Kitty keyboard protocol         | CSI responses              | Requires PTY round-trip                            |
+| Synchronized output (mode 2026) | defer render               | Timing-sensitive, needs dedicated test harness     |
+| Scrollback line access          | `getScrollbackLine()`      | Accessible via `SelectionManager` internals        |
+| `getSelection()` text           | Returns rendered text      | WASM render state unavailable outside render frame |
 
 ---
 

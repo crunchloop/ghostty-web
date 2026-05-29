@@ -55,7 +55,7 @@ jobs:
         run: bun run typecheck
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
       - name: Build library
         run: bun run build

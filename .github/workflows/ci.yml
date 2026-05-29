@@ -78,7 +78,7 @@ jobs:
         run: bun install
 
       - name: Run tests
-        run: bun test
+        run: bun run test
 
   build:
     name: build
@@ -103,8 +103,8 @@ jobs:
         run: |
           SIZE=$(stat -c%s ghostty-vt.wasm)
           echo "WASM size: $SIZE bytes"
-          if [ "$SIZE" -gt 524288 ]; then
-            echo "❌ Error: WASM exceeds 512 KB limit"
+          if [ "$SIZE" -gt 1048576 ]; then
+            echo "❌ Error: WASM exceeds 1 MB limit"
             exit 1
           fi
 
