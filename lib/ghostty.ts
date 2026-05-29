@@ -315,6 +315,20 @@ export class GhosttyTerminal {
   private rowWrapCache: boolean[] | null = null;
 
   /**
+   * Whether cellPool currently holds a valid built viewport.
+   *
+   * The visible-screen content is a pure function of the WASM terminal state,
+   * which only changes via write() (all VT sequences — text, scroll, clear,
+   * alt-screen switch) or resize(). So once getViewport() has walked the grid
+   * and populated cellPool, the result stays valid until the next write/resize
+   * — letting repeated getViewport()/getLine() calls within (and across, when
+   * idle) a render pass reuse the pool instead of re-walking it (~3-4 WASM
+   * crossings per cell). Cursor blink, selection overlays and scrollback
+   * paging don't read cellPool, so they don't invalidate it.
+   */
+  private viewportValid = false;
+
+  /**
    * Bytes the terminal would have written back to a real PTY in response
    * to query sequences (DSR, XTVERSION, in-band size reports, ...).
    * Captured by the WRITE_PTY callback installed in the constructor and
@@ -651,6 +665,7 @@ export class GhosttyTerminal {
     new Uint8Array(this.memory.buffer).set(bytes, ptr);
     this.exports.ghostty_terminal_vt_write(this.handle, ptr, bytes.length);
     this.exports.ghostty_wasm_free_u8_array(ptr, bytes.length);
+    this.viewportValid = false;
   }
 
   resize(cols: number, rows: number): void {
@@ -665,6 +680,7 @@ export class GhosttyTerminal {
       this.cellHeightPx
     );
     this.initCellPool();
+    this.viewportValid = false;
   }
 
   /**
@@ -1148,6 +1164,13 @@ export class GhosttyTerminal {
    * cached layout map for direct memory access.
    */
   getViewport(): GhosttyCell[] {
+    // Fast path: nothing has mutated the visible screen since the last build
+    // (no write/resize), so the populated pool is still correct. Skip both the
+    // render-state re-sync and the full grid walk. This is what turns the
+    // renderer's per-row getLine() loop from N full rebuilds per frame into
+    // one — see the viewportValid doc comment.
+    if (this.viewportValid) return this.cellPool;
+
     this.update();
 
     // Pre-zero the pool so cells we don't visit (iterator ends early, or
@@ -1370,6 +1393,7 @@ export class GhosttyTerminal {
 
     this.rowDirtyCache = dirtyCache;
     this.rowWrapCache = wrapCache;
+    this.viewportValid = true;
     return this.cellPool;
   }
 
