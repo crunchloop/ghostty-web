@@ -13,6 +13,14 @@ export interface ITerminalOptions {
   scrollback?: number; // Default: 1000
   fontSize?: number; // Default: 15
   fontFamily?: string; // Default: 'monospace'
+  /**
+   * Device pixel ratio for the canvas backing store. Defaults to
+   * window.devicePixelRatio. Pin to an integer (e.g.
+   * Math.round(window.devicePixelRatio)) to avoid sub-pixel seams between
+   * cells on fractional-DPR displays (Windows 125/150/175% scaling, some
+   * Linux setups).
+   */
+  devicePixelRatio?: number;
   allowTransparency?: boolean;
 
   // Phase 1 additions

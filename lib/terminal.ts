@@ -404,6 +404,7 @@ export class Terminal extends TerminalCore {
         cursorStyle: this.options.cursorStyle,
         cursorBlink: this.options.cursorBlink,
         theme: this.options.theme,
+        devicePixelRatio: this.options.devicePixelRatio,
       });
 
       this.renderer.resize(this.cols, this.rows);
