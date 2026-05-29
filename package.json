@@ -1,5 +1,5 @@
 {
-  "name": "ghostty-web",
+  "name": "@crunchloop/ghostty-web",
   "version": "0.4.1",
   "description": "Web-based terminal emulator using Ghostty's VT100 parser via WebAssembly",
   "type": "module",
