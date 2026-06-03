@@ -22,7 +22,7 @@
 
 import { describe, expect, test } from 'bun:test';
 import { CanvasRenderer, type IRenderable, type IScrollbackProvider } from './renderer';
-import { type GhosttyCell } from './types';
+import type { GhosttyCell } from './types';
 
 const COLS = 4;
 const ROWS = 4;
