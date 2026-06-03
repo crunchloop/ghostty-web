@@ -632,6 +632,10 @@ export class CanvasRenderer {
 
       // Fetch line from scrollback or visible screen
       let line: GhosttyCell[] | null = null;
+      // Active-grid row that backs this line's grapheme clusters. Must track the
+      // line source: the visible screen's scroll-adjusted row, or -1 for
+      // scrollback lines (not addressable via the active-grid getGraphemeString).
+      let graphemeRow = y;
       if (viewportY > 0) {
         // Scrolled up - need to fetch from scrollback + visible screen
         // When scrolled up N lines, we want to show:
@@ -644,10 +648,12 @@ export class CanvasRenderer {
           // Floor viewportY for array access (handles fractional values during smooth scroll)
           const scrollbackOffset = scrollbackLength - Math.floor(viewportY) + y;
           line = scrollbackProvider.getScrollbackLine(scrollbackOffset);
+          graphemeRow = -1;
         } else {
           // This row is from visible screen (lower part of viewport)
           const screenRow = viewportY > 0 ? y - Math.floor(viewportY) : y;
           line = buffer.getLine(screenRow);
+          graphemeRow = screenRow;
         }
       } else {
         // At bottom - fetch from visible screen
@@ -655,7 +661,7 @@ export class CanvasRenderer {
       }
 
       if (line) {
-        this.renderLine(line, y, dims.cols);
+        this.renderLine(line, y, dims.cols, graphemeRow);
       }
     }
 
@@ -712,7 +718,14 @@ export class CanvasRenderer {
    * and text in a single pass (cell by cell), the background of cell N would
    * cover any left-extending portions of graphemes from cell N-1.
    */
-  private renderLine(line: GhosttyCell[], y: number, cols: number): void {
+  /**
+   * @param y - the on-screen row the line is painted at.
+   * @param graphemeRow - the active-grid row whose grapheme clusters back this
+   *   line. Equals `y` when not scrolled, the scroll-adjusted screen row for the
+   *   visible portion while scrolled, or -1 for scrollback lines (whose
+   *   graphemes are not addressable via the active-grid getGraphemeString).
+   */
+  private renderLine(line: GhosttyCell[], y: number, cols: number, graphemeRow: number = y): void {
     const lineY = y * this.metrics.height;
     const lineWidth = cols * this.metrics.width;
 
@@ -739,7 +752,7 @@ export class CanvasRenderer {
     for (let x = 0; x < line.length; x++) {
       const cell = line[x];
       if (cell.width === 0) continue; // Skip spacer cells for wide characters
-      this.renderCellText(cell, x, y);
+      this.renderCellText(cell, x, y, undefined, graphemeRow);
     }
   }
 
@@ -803,7 +816,13 @@ export class CanvasRenderer {
    * Render a cell's text and decorations (Pass 2 of two-pass rendering)
    * Selection foreground color is applied here to match the selection background.
    */
-  private renderCellText(cell: GhosttyCell, x: number, y: number, colorOverride?: string): void {
+  private renderCellText(
+    cell: GhosttyCell,
+    x: number,
+    y: number,
+    colorOverride?: string,
+    graphemeRow: number = y
+  ): void {
     const cellX = x * this.metrics.width;
     const cellY = y * this.metrics.height;
     const cellWidth = this.metrics.width * cell.width;
@@ -872,13 +891,19 @@ export class CanvasRenderer {
     const textX = cellX;
     const textY = cellY + this.metrics.baseline;
 
-    // Get the character to render - use grapheme lookup for complex scripts
+    // Get the character to render - use grapheme lookup for complex scripts.
+    // getGraphemeString resolves against the live active grid, so it must be
+    // queried with the cell's active-grid row (graphemeRow), NOT the on-screen
+    // row `y`. When scrolled these differ; using `y` pulls the grapheme from a
+    // different line and paints the wrong glyph over scrolled content. A
+    // negative graphemeRow marks a scrollback line whose grapheme is not
+    // addressable here, so we fall back to the cell's base codepoint.
     let char: string;
-    if (cell.grapheme_len > 0 && this.currentBuffer?.getGraphemeString) {
+    if (cell.grapheme_len > 0 && graphemeRow >= 0 && this.currentBuffer?.getGraphemeString) {
       // Cell has additional codepoints - get full grapheme cluster
-      char = this.currentBuffer.getGraphemeString(y, x);
+      char = this.currentBuffer.getGraphemeString(graphemeRow, x);
     } else {
-      // Simple cell - single codepoint
+      // Simple cell, or scrollback line - render the base codepoint
       char = String.fromCodePoint(cell.codepoint || 32); // Default to space if null
     }
 
