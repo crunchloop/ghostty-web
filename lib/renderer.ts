@@ -782,8 +782,18 @@ export class CanvasRenderer {
     // we cannot infer it from the RGB triple because (0,0,0) is a valid
     // explicit color (programs emit it for "true black" backgrounds, e.g.
     // letterboxed image renderings).
-    const useThemeBg = cell.flags & CellFlags.INVERSE ? cell.fgIsDefault : cell.bgIsDefault;
-    if (!useThemeBg) {
+    if (cell.flags & CellFlags.INVERSE) {
+      // Inverse: the cell's background is its foreground color. A *default*
+      // foreground resolves to theme.foreground — which is NOT the line-level
+      // theme.background fill — so it must be painted explicitly. The old code
+      // treated `fgIsDefault` as "use theme background" and skipped the fill,
+      // so reverse-video cells (and program-drawn block cursors, e.g. Claude
+      // Code's) rendered the dark background instead of a solid block.
+      this.ctx.fillStyle = cell.fgIsDefault
+        ? this.theme.foreground
+        : this.rgbToCSS(bg_r, bg_g, bg_b);
+      this.ctx.fillRect(cellX, cellY, cellWidth, this.metrics.height);
+    } else if (!cell.bgIsDefault) {
       this.ctx.fillStyle = this.rgbToCSS(bg_r, bg_g, bg_b);
       this.ctx.fillRect(cellX, cellY, cellWidth, this.metrics.height);
     }
@@ -844,7 +854,13 @@ export class CanvasRenderer {
       // when the cell has the default fg (tag NONE), not when its explicit
       // RGB happens to be (0,0,0).
       const useThemeFg = cell.flags & CellFlags.INVERSE ? cell.bgIsDefault : cell.fgIsDefault;
-      this.ctx.fillStyle = useThemeFg ? this.theme.foreground : this.rgbToCSS(fg_r, fg_g, fg_b);
+      // For an inverse cell the text takes the cell's *background* color; a
+      // default background resolves to theme.background (the swapped theme
+      // color), not theme.foreground — so the glyph stays legible against the
+      // inverted (theme.foreground) block painted in renderCellBackground.
+      const themeColor =
+        cell.flags & CellFlags.INVERSE ? this.theme.background : this.theme.foreground;
+      this.ctx.fillStyle = useThemeFg ? themeColor : this.rgbToCSS(fg_r, fg_g, fg_b);
     }
 
     // Apply faint effect
