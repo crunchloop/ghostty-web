@@ -28,6 +28,36 @@ test.describe('Rendering', () => {
     expect(await hasRenderedContent(page)).toBe(true);
   });
 
+  // Regression: a reverse-video cell with DEFAULT colors must paint its
+  // background with theme.foreground (a solid light block). This is how
+  // reverse-video TUIs — and program-drawn block cursors like Claude Code's —
+  // render their cursor. A prior bug treated `fgIsDefault` as "use theme
+  // background" and skipped the fill, leaving the block dark/empty.
+  test('reverse-video cell with default colors paints a solid (light) background', async ({
+    page,
+  }) => {
+    // 10 reverse-video spaces at row 0: no glyphs, so the sampled pixels are
+    // purely the inverted cell background.
+    await termWrite(page, '\x1b[7m          \x1b[0m');
+    const avgBrightness = await page.evaluate(() => {
+      const canvas = document.querySelector('#terminal-container canvas') as HTMLCanvasElement;
+      const ctx = canvas.getContext('2d')!;
+      // Sample a band inside the first cells, well within the reverse run and
+      // before the trailing cursor.
+      const { data } = ctx.getImageData(2, 2, 40, 10);
+      let sum = 0;
+      let n = 0;
+      for (let i = 0; i < data.length; i += 4) {
+        sum += (data[i] + data[i + 1] + data[i + 2]) / 3;
+        n++;
+      }
+      return sum / n;
+    });
+    // Default theme: background ≈ 30, foreground ≈ 212. A painted inverse
+    // background reads bright; the pre-fix bug left it at the dark background.
+    expect(avgBrightness).toBeGreaterThan(120);
+  });
+
   test('plain text appears in buffer', async ({ page }) => {
     await termWrite(page, 'Hello World');
     const line = await getLine(page, 0);
