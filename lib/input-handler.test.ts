@@ -996,6 +996,70 @@ describe('InputHandler', () => {
     });
   });
 
+  describe('Custom Key Event Handler', () => {
+    test('a consumed key is not encoded and its browser default is left alone', () => {
+      new InputHandler(
+        ghostty,
+        container as any,
+        (data) => dataReceived.push(data),
+        () => {
+          bellCalled = true;
+        },
+        undefined,
+        () => true
+      );
+
+      // Cmd+R: the page's reload chord. The handler claims it, so the terminal
+      // must neither send bytes to the PTY nor block the browser's reload.
+      const event = createKeyEvent('KeyR', 'r', { meta: true });
+      simulateKey(container, event);
+
+      expect(dataReceived).toEqual([]);
+      expect(event.preventDefault).not.toHaveBeenCalled();
+    });
+
+    test('a consumed key can still be suppressed by the handler itself', () => {
+      new InputHandler(
+        ghostty,
+        container as any,
+        (data) => dataReceived.push(data),
+        () => {
+          bellCalled = true;
+        },
+        undefined,
+        (e) => {
+          e.preventDefault();
+          return true;
+        }
+      );
+
+      const event = createKeyEvent('KeyK', 'k', { meta: true });
+      simulateKey(container, event);
+
+      expect(dataReceived).toEqual([]);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+
+    test('a declined key falls through to the encoder and is suppressed', () => {
+      new InputHandler(
+        ghostty,
+        container as any,
+        (data) => dataReceived.push(data),
+        () => {
+          bellCalled = true;
+        },
+        undefined,
+        () => false
+      );
+
+      const event = createKeyEvent('KeyA', 'a');
+      simulateKey(container, event);
+
+      expect(dataReceived).toEqual(['a']);
+      expect(event.preventDefault).toHaveBeenCalled();
+    });
+  });
+
   describe('Unknown Keys', () => {
     test('ignores unmapped keys', () => {
       const handler = new InputHandler(

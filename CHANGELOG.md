@@ -7,6 +7,27 @@ Versioning follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ---
 
+## [Unreleased]
+
+### Changed
+
+- **`attachCustomKeyEventHandler` no longer calls `preventDefault()` for you.**
+  A handler that returns `true` now takes the event away from the terminal
+  completely: it is not encoded, and the browser default is left untouched for
+  the handler to decide on.
+
+  Previously there was no way to let a browser-reserved chord through — a
+  handler returning `true` had the default blocked for it, and returning
+  `false` ran the encoder path, which blocks it too. A page embedding the
+  terminal therefore could not keep Cmd+R (reload), Cmd+L (address bar) or the
+  zoom chords working while the terminal had focus.
+
+  **Migration:** a handler that returns `true` and relied on the terminal to
+  suppress the default must now call `event.preventDefault()` itself. Handlers
+  that return `false` are unaffected.
+
+---
+
 ## [0.4.0] — 2026-05-24
 
 This release is a major feature expansion maintained by the

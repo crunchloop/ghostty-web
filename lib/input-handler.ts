@@ -10,7 +10,9 @@
  *
  * Limitations:
  * - Does not handle IME/composition events (CJK input) - to be added later
- * - Captures all keyboard input (preventDefault on everything)
+ * - Captures all keyboard input it encodes (preventDefault on everything
+ *   that reaches the encoder). A custom key event handler can opt a chord
+ *   out of that, including out of preventDefault — see setCustomKeyEventHandler.
  */
 
 import type { Ghostty, KeyEncoder } from './ghostty';
@@ -261,7 +263,15 @@ export class InputHandler {
   }
 
   /**
-   * Set custom key event handler (for runtime updates)
+   * Set custom key event handler (for runtime updates).
+   *
+   * The handler returns whether it consumed the event. Returning `true` takes
+   * the key away from the terminal entirely: no encoding, and no
+   * `preventDefault()` — so the handler decides what happens to the browser
+   * default. Call `event.preventDefault()` inside the handler to suppress it,
+   * or leave it alone to let a browser-reserved chord (Cmd+R, Cmd+L) work.
+   * Returning `false` runs the normal encoder path, which suppresses the
+   * default as before.
    */
   setCustomKeyEventHandler(handler: (event: KeyboardEvent) => boolean): void {
     this.customKeyEventHandler = handler;
@@ -406,8 +416,16 @@ export class InputHandler {
     if (this.customKeyEventHandler) {
       const handled = this.customKeyEventHandler(event);
       if (handled) {
-        // Custom handler consumed the event
-        event.preventDefault();
+        // The consumer owns this event: the terminal neither encodes it nor
+        // touches the browser default. Handlers that want the default
+        // suppressed call event.preventDefault() themselves.
+        //
+        // Calling preventDefault() here unconditionally left consumers with no
+        // way to pass a browser-reserved chord through: returning true blocked
+        // the default, and returning false ran the encoder path, which blocks
+        // it too. A page embedding the terminal could therefore never keep
+        // Cmd+R (reload) or Cmd+L (focus the address bar) working while the
+        // terminal had focus.
         return;
       }
     }
