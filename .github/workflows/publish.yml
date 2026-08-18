@@ -63,7 +63,10 @@ jobs:
       - name: Setup Node.js for npm
         uses: actions/setup-node@v4
         with:
-          node-version: '20'
+          # Must stay within npm@latest's supported range: npm 12 requires
+          # ^22.22.2 || ^24.15.0 || >=26.0.0, so the previous '20' pin made the
+          # `npm install -g npm@latest` step below fail with EBADENGINE.
+          node-version: '24'
           registry-url: 'https://registry.npmjs.org'
 
       # Ensure npm 11.5.1 or later for trusted publishing
