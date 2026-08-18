@@ -826,6 +826,15 @@ export class Terminal extends TerminalCore {
   // Custom Event Handlers
   // ==========================================================================
 
+  /**
+   * Attach a handler that sees every keydown before the terminal encodes it.
+   *
+   * Return `true` to consume the event: the terminal will not encode it and
+   * will not call `preventDefault()`, leaving the browser default to the
+   * handler. Suppress it with `event.preventDefault()`, or leave it alone to
+   * let browser-reserved chords (Cmd+R, Cmd+L, zoom) keep working while the
+   * terminal has focus. Return `false` for normal terminal handling.
+   */
   public attachCustomKeyEventHandler(
     customKeyEventHandler: (event: KeyboardEvent) => boolean
   ): void {

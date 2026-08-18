@@ -48,7 +48,36 @@ If you need byte-for-byte xterm.js behavior for a specific key (e.g. Shift+Enter
 term.attachCustomKeyEventHandler((e) => {
   if (e.key === 'Enter' && e.shiftKey && !e.ctrlKey && !e.altKey && !e.metaKey) {
     term.input('\r', true); // fires onData with '\r'
-    return true; // suppress the default encoder path
+    e.preventDefault(); // the terminal no longer does this for you
+    return true; // skip the default encoder path
+  }
+  return false;
+});
+```
+
+### Browser-reserved shortcuts
+
+Returning `true` takes the key away from the terminal completely — it is not
+encoded, and `preventDefault()` is **not** called on your behalf. That is what
+lets an embedding page keep browser chords working while the terminal has
+focus; without it, a focused terminal swallows Cmd+R, Cmd+L and friends.
+
+```ts
+const isMac = navigator.userAgent.includes('Mac');
+
+// Copy and paste are handled by the terminal itself (after this handler runs),
+// so they must not be handed back to the browser here.
+const TERMINAL_OWNED = new Set(['KeyC', 'KeyV']);
+
+term.attachCustomKeyEventHandler((e) => {
+  if (TERMINAL_OWNED.has(e.code)) return false;
+
+  // Let the browser reload, focus the address bar, zoom, and so on. On macOS
+  // no Cmd chord has a PTY meaning; elsewhere plain Ctrl+R belongs to the
+  // shell (reverse-i-search), so only the Shift variant is handed back.
+  const reserved = isMac ? e.metaKey : e.ctrlKey && e.shiftKey;
+  if (reserved) {
+    return true; // consumed by "do nothing" — the browser default survives
   }
   return false;
 });
